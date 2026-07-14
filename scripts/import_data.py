@@ -12,6 +12,7 @@ import re
 import secrets
 import sys
 import csv
+import unicodedata
 
 import openpyxl
 import psycopg2
@@ -71,11 +72,43 @@ def make_qr_code():
     return secrets.token_urlsafe(8).replace("_", "").replace("-", "")[:10]
 
 
+def normalize_name(name):
+    if not name:
+        return ""
+    s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    s = re.sub(r"\s+", " ", s).strip().lower()
+    return s
+
+
+def build_email_lookup(wb):
+    """Name -> email, sourced from the two authority sign-up forms."""
+    lookup = {}
+
+    ws = wb["Autoridades de Comité"]
+    for r in range(2, ws.max_row + 1):
+        email = clean(ws.cell(row=r, column=3).value)
+        name = " ".join(
+            filter(None, [clean(ws.cell(row=r, column=4).value), clean(ws.cell(row=r, column=5).value)])
+        )
+        if email and name:
+            lookup.setdefault(normalize_name(name), email)
+
+    ws = wb["Postulaciones | Autoridades de "]
+    for r in range(2, ws.max_row + 1):
+        email = clean(ws.cell(row=r, column=2).value)
+        name = clean(ws.cell(row=r, column=3).value)
+        if email and name:
+            lookup.setdefault(normalize_name(name), email)
+
+    return lookup
+
+
 def parse_delegados(ws, rows_out, skipped):
     for r in range(2, ws.max_row + 1):
         tipo = clean(ws.cell(row=r, column=5).value)
         if not tipo:
             continue
+        email = clean(ws.cell(row=r, column=4).value)
 
         if tipo in ("Delegado/a | Corresponsal de Prensa", "Delegación"):
             name = " ".join(
@@ -94,6 +127,7 @@ def parse_delegados(ws, rows_out, skipped):
                     city=clean(ws.cell(row=r, column=11).value),
                     diet=clean_yesno_field(ws.cell(row=r, column=15).value, ws.cell(row=r, column=16).value),
                     allergy=clean_freeform_or_no(ws.cell(row=r, column=17).value),
+                    email=email,
                 )
             )
 
@@ -116,6 +150,7 @@ def parse_delegados(ws, rows_out, skipped):
                     city=clean(ws.cell(row=r, column=46).value),
                     diet=clean_yesno_field(ws.cell(row=r, column=50).value, ws.cell(row=r, column=51).value),
                     allergy=clean_freeform_or_no(ws.cell(row=r, column=52).value),
+                    email=email,
                 )
             )
 
@@ -134,13 +169,14 @@ def parse_delegados(ws, rows_out, skipped):
                     city=None,
                     diet=None,
                     allergy=None,
+                    email=email,
                 )
             )
         else:
             skipped.append((r, f"tipo desconocido: {tipo}"))
 
 
-def parse_autoridades(ws, rows_out, review_needed):
+def parse_autoridades(ws, rows_out, review_needed, email_lookup, missing_email):
     for r in range(2, ws.max_row + 1):
         name = clean(ws.cell(row=r, column=1).value)
         if not name:
@@ -149,6 +185,9 @@ def parse_autoridades(ws, rows_out, review_needed):
         committee = clean(ws.cell(row=r, column=4).value)
         institution = clean(ws.cell(row=r, column=5).value)
         city = clean(ws.cell(row=r, column=6).value)
+        email = email_lookup.get(normalize_name(name))
+        if not email:
+            missing_email.append(name)
 
         rows_out.append(
             dict(
@@ -160,6 +199,7 @@ def parse_autoridades(ws, rows_out, review_needed):
                 city=city,
                 diet=None,
                 allergy=None,
+                email=email,
             )
         )
 
@@ -171,6 +211,9 @@ def parse_autoridades(ws, rows_out, review_needed):
         second_role = clean(ws.cell(row=r, column=9).value)
         if second_name:
             if second_role in VALID_AUTHORITY_ROLES:
+                second_email = email_lookup.get(normalize_name(second_name))
+                if not second_email:
+                    missing_email.append(second_name)
                 rows_out.append(
                     dict(
                         full_name=second_name,
@@ -181,6 +224,7 @@ def parse_autoridades(ws, rows_out, review_needed):
                         city=city,
                         diet=None,
                         allergy=None,
+                        email=second_email,
                     )
                 )
             else:
@@ -195,9 +239,12 @@ def main():
     people = []
     skipped = []
     review_needed = []
+    missing_email = []
+
+    email_lookup = build_email_lookup(wb)
 
     parse_delegados(wb["Delegados, pajes & asesores"], people, skipped)
-    parse_autoridades(wb["Lista Oficial de Autoridades de"], people, review_needed)
+    parse_autoridades(wb["Lista Oficial de Autoridades de"], people, review_needed, email_lookup, missing_email)
 
     for p in people:
         p["qr_code"] = make_qr_code()
@@ -209,9 +256,9 @@ def main():
         cur.execute(
             """
             insert into participants
-                (qr_code, full_name, role, authority_role, committee, institution, city, diet, allergy)
+                (qr_code, full_name, role, authority_role, committee, institution, city, diet, allergy, email)
             values (%(qr_code)s, %(full_name)s, %(role)s, %(authority_role)s, %(committee)s,
-                    %(institution)s, %(city)s, %(diet)s, %(allergy)s)
+                    %(institution)s, %(city)s, %(diet)s, %(allergy)s, %(email)s)
             """,
             p,
         )
@@ -220,9 +267,11 @@ def main():
     os.makedirs(os.path.dirname(OUT_CSV), exist_ok=True)
     with open(OUT_CSV, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["full_name", "role", "authority_role", "committee", "qr_code"])
+        w.writerow(["full_name", "role", "authority_role", "committee", "qr_code", "email"])
         for p in people:
-            w.writerow([p["full_name"], p["role"], p["authority_role"] or "", p["committee"] or "", p["qr_code"]])
+            w.writerow(
+                [p["full_name"], p["role"], p["authority_role"] or "", p["committee"] or "", p["qr_code"], p["email"] or ""]
+            )
 
     from collections import Counter
 
@@ -239,6 +288,12 @@ def main():
         print(f"\n{len(review_needed)} nombres secundarios en 'Lista Oficial de Autoridades' con rol ambiguo (NO importados, revisar a mano):")
         for r, name, role in review_needed:
             print(f"  fila {r}: {name!r} (texto en columna rol: {role!r})")
+
+    no_email = [p["full_name"] for p in people if not p.get("email")]
+    if no_email:
+        print(f"\n{len(no_email)} personas sin email encontrado (no tendrán PNG de QR):")
+        for name in no_email:
+            print(f"  - {name}")
 
     cur.close()
     conn.close()

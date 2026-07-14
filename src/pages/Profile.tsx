@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase, type PublicProfile } from '../lib/supabase'
-
-const ROLE_LABELS: Record<PublicProfile['role'], string> = {
-  delegado: 'Delegado/a',
-  paje: 'Paje',
-  asesor: 'Asesor/a',
-  autoridad: 'Autoridad de Comité',
-}
+import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
+import pazmunLockup from '../assets/pazmun-lockup.png'
 
 type State =
   | { status: 'loading' }
@@ -46,52 +41,75 @@ export default function Profile() {
 
   return (
     <div className="profile-page">
-      {state.status === 'loading' && <p className="profile-status">Cargando…</p>}
+      {state.status === 'loading' && (
+        <div className="skeleton-card" aria-label="Cargando credencial" role="status">
+          <div className="skeleton-header" />
+          <div className="skeleton-body">
+            <div className="skeleton-line" style={{ width: '40%', marginBottom: 12 }} />
+            <div className="skeleton-line" style={{ width: '80%', height: 22, marginBottom: 20 }} />
+            <div className="skeleton-line" style={{ width: '100%', marginBottom: 10 }} />
+            <div className="skeleton-line" style={{ width: '100%', marginBottom: 10 }} />
+            <div className="skeleton-line" style={{ width: '60%' }} />
+          </div>
+        </div>
+      )}
 
       {state.status === 'not-found' && (
-        <div className="profile-card profile-card--error">
+        <div className="credential-message">
           <h1>Credencial no encontrada</h1>
           <p>Este código QR no corresponde a ningún participante registrado.</p>
         </div>
       )}
 
       {state.status === 'error' && (
-        <div className="profile-card profile-card--error">
+        <div className="credential-message">
           <h1>Error al cargar</h1>
           <p>{state.message}</p>
         </div>
       )}
 
       {state.status === 'ok' && (
-        <div className="profile-card">
-          <p className="profile-event">PAZMUN 2026</p>
-          <h1 className="profile-name">{state.profile.full_name}</h1>
-          <p className="profile-role">
-            {state.profile.role === 'autoridad' && state.profile.authority_role
-              ? state.profile.authority_role
-              : ROLE_LABELS[state.profile.role]}
-          </p>
+        <div
+          className="credential"
+          style={{ '--role-color': ROLE_COLOR_VARS[state.profile.role] } as React.CSSProperties}
+        >
+          <div className="credential-stripe" />
+          <div className="credential-main">
+            <div className="credential-brand">
+              <img src={pazmunLockup} alt="PAZMUN 2026" />
+            </div>
 
-          <dl className="profile-details">
-            {state.profile.committee && (
-              <div>
-                <dt>Comité</dt>
-                <dd>{state.profile.committee}</dd>
-              </div>
-            )}
-            {state.profile.institution && (
-              <div>
-                <dt>Institución</dt>
-                <dd>{state.profile.institution}</dd>
-              </div>
-            )}
-            {state.profile.city && (
-              <div>
-                <dt>Ciudad</dt>
-                <dd>{state.profile.city}</dd>
-              </div>
-            )}
-          </dl>
+            <div className="credential-body">
+              <p className="credential-eyebrow">Credencial oficial · PAZMUN 2026</p>
+              <h1 className="credential-name">{state.profile.full_name}</h1>
+              <p className="credential-role-label">{roleLabel(state.profile)}</p>
+
+              <dl className="credential-rows">
+                {state.profile.committee && (
+                  <div>
+                    <dt>Comité</dt>
+                    <dd>{state.profile.committee}</dd>
+                  </div>
+                )}
+                {state.profile.institution && (
+                  <div>
+                    <dt>Institución</dt>
+                    <dd>{state.profile.institution}</dd>
+                  </div>
+                )}
+                {state.profile.city && (
+                  <div>
+                    <dt>Ciudad</dt>
+                    <dd>{state.profile.city}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+
+            <div className="credential-footer">
+              <span>Universidad Católica Boliviana · Sede La Paz</span>
+            </div>
+          </div>
         </div>
       )}
     </div>
