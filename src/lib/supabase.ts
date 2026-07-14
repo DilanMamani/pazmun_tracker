@@ -17,4 +17,5 @@ export type PublicProfile = {
   committee: string | null
   institution: string | null
   city: string | null
+  photo_url: string | null
 }

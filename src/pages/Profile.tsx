@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { supabase, type PublicProfile } from '../lib/supabase'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
 import pazmunLockup from '../assets/pazmun-lockup.png'
+import Avatar from '../components/Avatar'
 
 type State =
   | { status: 'loading' }
@@ -81,8 +82,14 @@ export default function Profile() {
 
             <div className="credential-body">
               <p className="credential-eyebrow">Credencial oficial · PAZMUN 2026</p>
-              <h1 className="credential-name">{state.profile.full_name}</h1>
-              <p className="credential-role-label">{roleLabel(state.profile)}</p>
+
+              <div className="credential-identity">
+                <Avatar src={state.profile.photo_url} name={state.profile.full_name} />
+                <div>
+                  <h1 className="credential-name">{state.profile.full_name}</h1>
+                  <p className="credential-role-label">{roleLabel(state.profile)}</p>
+                </div>
+              </div>
 
               <dl className="credential-rows">
                 {state.profile.committee && (
