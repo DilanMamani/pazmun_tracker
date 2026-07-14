@@ -19,3 +19,13 @@ export type PublicProfile = {
   city: string | null
   photo_url: string | null
 }
+
+export type FoodStatus = 'Pendiente' | 'Alimentado'
+
+export type Participant = PublicProfile & {
+  id: string
+  diet: string | null
+  allergy: string | null
+  food_status: FoodStatus
+  notes: string | null
+}
