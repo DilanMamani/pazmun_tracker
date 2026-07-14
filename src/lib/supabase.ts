@@ -20,12 +20,24 @@ export type PublicProfile = {
   photo_url: string | null
 }
 
-export type FoodStatus = 'Pendiente' | 'Alimentado'
-
 export type Participant = PublicProfile & {
   id: string
   diet: string | null
   allergy: string | null
-  food_status: FoodStatus
   notes: string | null
+}
+
+export type StaffRole = 'staff' | 'admin'
+
+export type MealSession = {
+  id: string
+  label: string
+  created_at: string
+}
+
+export type MealCheckin = {
+  id: string
+  participant_id: string
+  meal_session_id: string
+  checked_at: string
 }

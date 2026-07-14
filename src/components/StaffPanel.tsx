@@ -1,22 +1,66 @@
-import { useState } from 'react'
-import { supabase, type Participant, type FoodStatus } from '../lib/supabase'
+import { useEffect, useState, type FormEvent } from 'react'
+import { supabase, type Participant, type MealSession } from '../lib/supabase'
+import { useSession } from '../lib/useSession'
 
 export default function StaffPanel({ participant }: { participant: Participant }) {
-  const [foodStatus, setFoodStatus] = useState<FoodStatus>(participant.food_status)
+  const { staffRole } = useSession()
+  const [sessions, setSessions] = useState<MealSession[]>([])
+  const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set())
+  const [pendingId, setPendingId] = useState<string | null>(null)
+
   const [notes, setNotes] = useState(participant.notes ?? '')
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [notesSaveState, setNotesSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
-  const dirty = foodStatus !== participant.food_status || notes !== (participant.notes ?? '')
+  const [newSessionLabel, setNewSessionLabel] = useState('')
+  const [creatingSession, setCreatingSession] = useState(false)
 
-  async function handleSave() {
-    setSaveState('saving')
-    const { error } = await supabase.rpc('staff_update_food_status', {
+  async function loadSessions() {
+    const [{ data: sessionData }, { data: checkinData }] = await Promise.all([
+      supabase.from('meal_sessions').select('id, label, created_at').order('created_at'),
+      supabase.from('meal_checkins').select('meal_session_id').eq('participant_id', participant.id),
+    ])
+    setSessions((sessionData as MealSession[]) ?? [])
+    setCheckedInIds(new Set((checkinData ?? []).map((c) => c.meal_session_id as string)))
+  }
+
+  useEffect(() => {
+    loadSessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participant.id])
+
+  async function handleCheckin(sessionId: string) {
+    setPendingId(sessionId)
+    const { error } = await supabase.rpc('staff_checkin_meal', {
       p_qr_code: participant.qr_code,
-      p_food_status: foodStatus,
+      p_meal_session_id: sessionId,
+    })
+    if (!error) setCheckedInIds((prev) => new Set(prev).add(sessionId))
+    setPendingId(null)
+  }
+
+  async function handleCreateSession(e: FormEvent) {
+    e.preventDefault()
+    const label = newSessionLabel.trim()
+    if (!label) return
+    setCreatingSession(true)
+    const { error } = await supabase.rpc('staff_create_meal_session', { p_label: label })
+    setCreatingSession(false)
+    if (!error) {
+      setNewSessionLabel('')
+      loadSessions()
+    }
+  }
+
+  async function handleSaveNotes() {
+    setNotesSaveState('saving')
+    const { error } = await supabase.rpc('staff_update_notes', {
+      p_qr_code: participant.qr_code,
       p_notes: notes || null,
     })
-    setSaveState(error ? 'error' : 'saved')
+    setNotesSaveState(error ? 'error' : 'saved')
   }
+
+  const notesDirty = notes !== (participant.notes ?? '')
 
   return (
     <div className="staff-panel">
@@ -36,25 +80,47 @@ export default function StaffPanel({ participant }: { participant: Participant }
         </div>
       )}
 
-      <div className="staff-row">
-        <dt>Estado de alimentación</dt>
-        <dd>
-          <div className="staff-toggle" role="group" aria-label="Estado de alimentación">
-            {(['Pendiente', 'Alimentado'] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={foodStatus === option ? 'active' : ''}
-                onClick={() => {
-                  setFoodStatus(option)
-                  setSaveState('idle')
-                }}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        </dd>
+      <div className="staff-meals">
+        <p className="staff-meals-label">Comidas</p>
+
+        {sessions.length === 0 && (
+          <p className="staff-home-hint">Todavía no hay comidas registradas.</p>
+        )}
+
+        <ul className="staff-meal-list">
+          {sessions.map((s) => {
+            const done = checkedInIds.has(s.id)
+            return (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  className={done ? 'checked' : ''}
+                  disabled={done || pendingId === s.id}
+                  onClick={() => handleCheckin(s.id)}
+                >
+                  <span>{s.label}</span>
+                  <span className="staff-meal-status">
+                    {done ? 'Alimentado' : pendingId === s.id ? 'Marcando…' : 'Marcar'}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+
+        {staffRole === 'admin' && (
+          <form className="staff-new-session" onSubmit={handleCreateSession}>
+            <input
+              type="text"
+              value={newSessionLabel}
+              onChange={(e) => setNewSessionLabel(e.target.value)}
+              placeholder="Nueva comida (ej. Día 2 - Almuerzo)"
+            />
+            <button type="submit" disabled={creatingSession || !newSessionLabel.trim()}>
+              Agregar
+            </button>
+          </form>
+        )}
       </div>
 
       <label className="staff-notes-label">
@@ -63,7 +129,7 @@ export default function StaffPanel({ participant }: { participant: Participant }
           value={notes}
           onChange={(e) => {
             setNotes(e.target.value)
-            setSaveState('idle')
+            setNotesSaveState('idle')
           }}
           rows={3}
           placeholder="Sin notas"
@@ -71,11 +137,15 @@ export default function StaffPanel({ participant }: { participant: Participant }
       </label>
 
       <div className="staff-panel-actions">
-        <button type="button" onClick={handleSave} disabled={!dirty || saveState === 'saving'}>
-          {saveState === 'saving' ? 'Guardando…' : 'Guardar cambios'}
+        <button
+          type="button"
+          onClick={handleSaveNotes}
+          disabled={!notesDirty || notesSaveState === 'saving'}
+        >
+          {notesSaveState === 'saving' ? 'Guardando…' : 'Guardar notas'}
         </button>
-        {saveState === 'saved' && !dirty && <span className="staff-save-ok">Guardado</span>}
-        {saveState === 'error' && <span className="staff-save-error">Error al guardar</span>}
+        {notesSaveState === 'saved' && !notesDirty && <span className="staff-save-ok">Guardado</span>}
+        {notesSaveState === 'error' && <span className="staff-save-error">Error al guardar</span>}
       </div>
     </div>
   )

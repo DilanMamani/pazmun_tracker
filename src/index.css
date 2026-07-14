@@ -416,31 +416,100 @@ body {
   color: var(--text-hi);
 }
 
-.staff-toggle {
-  display: flex;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  overflow: hidden;
+/* --- meal check-ins --- */
+.staff-meals {
+  margin: 14px 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
-.staff-toggle button {
-  border: none;
+.staff-meals-label {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-low);
+}
+
+.staff-meal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.staff-meal-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-hi);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.staff-meal-list button:disabled {
+  cursor: default;
+}
+
+.staff-meal-list button.checked {
+  background: var(--bg);
+  border-color: var(--role-paje);
+}
+
+.staff-meal-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-low);
+}
+
+.staff-meal-list button.checked .staff-meal-status {
+  color: var(--role-paje);
+}
+
+.staff-new-session {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.staff-new-session input {
+  flex: 1;
+  min-width: 0;
+  font: 13.5px/1.4 var(--sans);
+  color: var(--text-hi);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.staff-new-session button {
+  border: 1.5px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-mid);
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
-  padding: 7px 12px;
+  font-weight: 700;
+  padding: 0 14px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.staff-toggle button + button {
-  border-left: 1px solid var(--border-strong);
-}
-
-.staff-toggle button.active {
-  background: var(--navy);
-  color: #ffffff;
+.staff-new-session button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .staff-notes-label {
@@ -594,6 +663,21 @@ body {
 
 .staff-link-button:hover {
   color: var(--blue-accent);
+}
+
+.staff-alert-card {
+  margin: 18px 0;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 8px;
+}
+
+.staff-alert-count {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-hi);
 }
 
 .staff-home h1 {
