@@ -18,6 +18,7 @@ export type PublicProfile = {
   institution: string | null
   city: string | null
   photo_url: string | null
+  assignment: string | null
 }
 
 export type Participant = PublicProfile & {

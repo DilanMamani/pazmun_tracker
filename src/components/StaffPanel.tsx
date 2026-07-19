@@ -66,10 +66,15 @@ export default function StaffPanel({ participant }: { participant: Participant }
     <div className="staff-panel">
       <p className="staff-panel-eyebrow">Solo staff</p>
 
-      {participant.allergy && (
+      {participant.allergy ? (
         <div className="staff-alert">
           <strong>Alergia</strong>
           <span>{participant.allergy}</span>
+        </div>
+      ) : (
+        <div className="staff-row">
+          <dt>Alergia</dt>
+          <dd className="staff-row-muted">No especificado</dd>
         </div>
       )}
 

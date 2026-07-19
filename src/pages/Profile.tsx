@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase, type Participant, type PublicProfile } from '../lib/supabase'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
+import { assignmentFlag } from '../lib/countries'
 import { useSession } from '../lib/useSession'
 import pazmunLockup from '../assets/pazmun-lockup.png'
 import Avatar from '../components/Avatar'
@@ -100,6 +101,19 @@ export default function Profile() {
                     <div>
                       <dt>Comité</dt>
                       <dd>{state.profile.committee}</dd>
+                    </div>
+                  )}
+                  {state.profile.assignment && (
+                    <div>
+                      <dt>Representa</dt>
+                      <dd>
+                        {assignmentFlag(state.profile.assignment) && (
+                          <span className="credential-flag" aria-hidden="true">
+                            {assignmentFlag(state.profile.assignment)}
+                          </span>
+                        )}
+                        {state.profile.assignment}
+                      </dd>
                     </div>
                   )}
                   {state.profile.institution && (
