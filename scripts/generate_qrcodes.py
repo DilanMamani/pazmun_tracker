@@ -2,10 +2,11 @@
 """
 Generates one PNG QR code per participant, pointing to their public profile
 page. Files are named after the person's email, sorted into one folder per
-committee (sourced from the official Asignaciones sheet — the DB's own
-`committee` column has inconsistent naming across import batches), with
-everyone the sheet doesn't cover landing in "Otros". Everything is zipped
-into a single file at the end.
+committee — using the participant's own `committee` field, which
+scripts/reconcile_asignaciones.py keeps normalized to the sheet's official
+names. Only participants still on an unofficial/legacy committee name (or
+with no committee at all) land in "Otros". Everything is zipped into a
+single file at the end.
 
 Run: python3 scripts/generate_qrcodes.py
 Requires DATABASE_URL in .env.
@@ -51,40 +52,23 @@ def clean(v):
     return s if s else None
 
 
-def committee_by_email():
-    """Email -> official committee name, parsed from the Asignaciones sheet.
-    Each sheet mixes two header styles ('Cargo' for the mesa, 'País' or
-    'Medio de Comunicación' for delegates/press) and some rows pair up under
-    a shared label (e.g. two press people per outlet), so the label column
-    is carried forward until a blank row resets it.
-    """
+def official_committees():
+    """The Asignaciones sheet's own committee names — one per sheet tab."""
     wb = openpyxl.load_workbook(ASIGNACIONES_PATH, read_only=True, data_only=True)
-    result = {}
+    names = set()
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
-        rows = list(ws.iter_rows(values_only=True))
-        committee_label = clean(rows[1][0]) if len(rows) > 1 else sheet_name
-        correo_idx = None
-        for row in rows:
-            cells = [clean(c) for c in row]
-            if not any(cells):
-                continue
-            if "Correo electrónico" in cells:
-                correo_idx = cells.index("Correo electrónico")
-                continue
-            if correo_idx is None:
-                continue
-            correo = cells[correo_idx]
-            if correo:
-                result[correo.lower()] = committee_label
-    return result
+        rows = list(ws.iter_rows(values_only=True, max_row=2))
+        if len(rows) > 1:
+            names.add(clean(rows[1][0]))
+    return names
 
 
 def main():
     load_env()
     db_url = os.environ["DATABASE_URL"]
 
-    committee_map = committee_by_email()
+    official = official_committees()
 
     if os.path.exists(OUT_DIR):
         shutil.rmtree(OUT_DIR)
@@ -92,7 +76,7 @@ def main():
 
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
-    cur.execute("select full_name, role, email, qr_code from participants order by role, full_name")
+    cur.execute("select full_name, role, email, qr_code, committee from participants order by role, full_name")
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -102,14 +86,11 @@ def main():
     by_folder = {}
     generated = 0
 
-    for full_name, role, email, qr_code in rows:
-        if email:
-            base = safe_filename(email)
-            folder_label = committee_map.get(email.lower(), OTROS)
-        else:
-            base = safe_filename(full_name)
-            folder_label = OTROS
+    for full_name, role, email, qr_code, committee in rows:
+        base = safe_filename(email) if email else safe_filename(full_name)
+        if not email:
             used_name_fallback.append(full_name)
+        folder_label = committee if committee in official else OTROS
 
         folder_name = safe_filename(folder_label)[:80]
         folder_path = os.path.join(OUT_DIR, folder_name)
