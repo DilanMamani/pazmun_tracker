@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase, type Participant, type MealSession } from '../lib/supabase'
 import { useSession } from '../lib/useSession'
+import Icon from './Icon'
 
 export default function StaffPanel({ participant }: { participant: Participant }) {
   const { staffRole } = useSession()
+  const canEdit = staffRole === 'staff' || staffRole === 'admin'
   const [sessions, setSessions] = useState<MealSession[]>([])
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set())
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -68,7 +70,10 @@ export default function StaffPanel({ participant }: { participant: Participant }
 
       {participant.allergy && (
         <div className="staff-alert">
-          <strong>Alergia</strong>
+          <strong>
+            <Icon name="alert" />
+            Alergia
+          </strong>
           <span>{participant.allergy}</span>
         </div>
       )}
@@ -90,6 +95,19 @@ export default function StaffPanel({ participant }: { participant: Participant }
         <ul className="staff-meal-list">
           {sessions.map((s) => {
             const done = checkedInIds.has(s.id)
+            if (!canEdit) {
+              return (
+                <li key={s.id}>
+                  <span className={done ? 'checked' : ''}>
+                    <span className="staff-meal-name">
+                      <Icon name={done ? 'check-circle' : 'circle'} className="staff-meal-icon" />
+                      {s.label}
+                    </span>
+                    <span className="staff-meal-status">{done ? 'Alimentado' : 'Pendiente'}</span>
+                  </span>
+                </li>
+              )
+            }
             return (
               <li key={s.id}>
                 <button
@@ -98,7 +116,10 @@ export default function StaffPanel({ participant }: { participant: Participant }
                   disabled={done || pendingId === s.id}
                   onClick={() => handleCheckin(s.id)}
                 >
-                  <span>{s.label}</span>
+                  <span className="staff-meal-name">
+                    <Icon name={done ? 'check-circle' : 'circle'} className="staff-meal-icon" />
+                    {s.label}
+                  </span>
                   <span className="staff-meal-status">
                     {done ? 'Alimentado' : pendingId === s.id ? 'Marcando…' : 'Marcar'}
                   </span>
@@ -117,6 +138,7 @@ export default function StaffPanel({ participant }: { participant: Participant }
               placeholder="Nueva comida (ej. Día 2 - Almuerzo)"
             />
             <button type="submit" disabled={creatingSession || !newSessionLabel.trim()}>
+              <Icon name="add" />
               Agregar
             </button>
           </form>
@@ -133,20 +155,23 @@ export default function StaffPanel({ participant }: { participant: Participant }
           }}
           rows={3}
           placeholder="Sin notas"
+          readOnly={!canEdit}
         />
       </label>
 
-      <div className="staff-panel-actions">
-        <button
-          type="button"
-          onClick={handleSaveNotes}
-          disabled={!notesDirty || notesSaveState === 'saving'}
-        >
-          {notesSaveState === 'saving' ? 'Guardando…' : 'Guardar notas'}
-        </button>
-        {notesSaveState === 'saved' && !notesDirty && <span className="staff-save-ok">Guardado</span>}
-        {notesSaveState === 'error' && <span className="staff-save-error">Error al guardar</span>}
-      </div>
+      {canEdit && (
+        <div className="staff-panel-actions">
+          <button
+            type="button"
+            onClick={handleSaveNotes}
+            disabled={!notesDirty || notesSaveState === 'saving'}
+          >
+            {notesSaveState === 'saving' ? 'Guardando…' : 'Guardar notas'}
+          </button>
+          {notesSaveState === 'saved' && !notesDirty && <span className="staff-save-ok">Guardado</span>}
+          {notesSaveState === 'error' && <span className="staff-save-error">Error al guardar</span>}
+        </div>
+      )}
     </div>
   )
 }

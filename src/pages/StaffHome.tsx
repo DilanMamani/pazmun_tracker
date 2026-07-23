@@ -1,21 +1,25 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type Participant, type MealSession } from '../lib/supabase'
-import { roleLabel } from '../lib/roles'
+import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
+import Icon from '../components/Icon'
 
 export default function StaffHome() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Participant[]>([])
   const [searched, setSearched] = useState(false)
+  const [searching, setSearching] = useState(false)
 
   const [latestSession, setLatestSession] = useState<MealSession | null>(null)
   const [totalCount, setTotalCount] = useState(0)
   const [fedCount, setFedCount] = useState(0)
+  const [loadingAlert, setLoadingAlert] = useState(true)
   const [pending, setPending] = useState<Participant[] | null>(null)
   const [loadingPending, setLoadingPending] = useState(false)
 
   useEffect(() => {
     async function loadAlert() {
+      setLoadingAlert(true)
       const { data: sessions } = await supabase
         .from('meal_sessions')
         .select('id, label, created_at')
@@ -23,7 +27,10 @@ export default function StaffHome() {
         .limit(1)
       const session = (sessions?.[0] as MealSession) ?? null
       setLatestSession(session)
-      if (!session) return
+      if (!session) {
+        setLoadingAlert(false)
+        return
+      }
 
       const [{ count: total }, { count: fed }] = await Promise.all([
         supabase.from('participants').select('id', { count: 'exact', head: true }),
@@ -34,6 +41,7 @@ export default function StaffHome() {
       ])
       setTotalCount(total ?? 0)
       setFedCount(fed ?? 0)
+      setLoadingAlert(false)
     }
     loadAlert()
   }, [])
@@ -59,6 +67,7 @@ export default function StaffHome() {
     e.preventDefault()
     const term = query.trim()
     if (!term) return
+    setSearching(true)
     const { data } = await supabase
       .from('participants')
       .select('*')
@@ -67,6 +76,7 @@ export default function StaffHome() {
       .limit(20)
     setResults((data as Participant[]) ?? [])
     setSearched(true)
+    setSearching(false)
   }
 
   return (
@@ -79,11 +89,19 @@ export default function StaffHome() {
             className="staff-link-button"
             onClick={() => supabase.auth.signOut()}
           >
+            <Icon name="logout" />
             Cerrar sesión
           </button>
         </div>
 
-        {latestSession && (
+        {loadingAlert && (
+          <div className="staff-loading-rows">
+            <div className="skeleton-line" style={{ width: '60%' }} />
+            <div className="skeleton-line" style={{ width: '40%', height: 20 }} />
+          </div>
+        )}
+
+        {!loadingAlert && latestSession && (
           <div className="staff-alert-card">
             <p className="staff-meals-label">Última comida: {latestSession.label}</p>
             <p className="staff-alert-count">
@@ -98,11 +116,17 @@ export default function StaffHome() {
                 {pending.map((p) => (
                   <li key={p.id}>
                     <Link to={`/p/${p.qr_code}`}>
-                      <span className="staff-result-name">{p.full_name}</span>
-                      <span className="staff-result-meta">
-                        {roleLabel(p)}
-                        {p.committee ? ` · ${p.committee}` : ''}
-                        {p.allergy ? ' · ⚠ alergia' : ''}
+                      <span
+                        className="role-dot"
+                        style={{ '--role-color': ROLE_COLOR_VARS[p.role] } as React.CSSProperties}
+                      />
+                      <span className="staff-result-text">
+                        <span className="staff-result-name">{p.full_name}</span>
+                        <span className="staff-result-meta">
+                          {roleLabel(p)}
+                          {p.committee ? ` · ${p.committee}` : ''}
+                          {p.allergy && <Icon name="alert" />}
+                        </span>
                       </span>
                     </Link>
                   </li>
@@ -125,7 +149,10 @@ export default function StaffHome() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nombre del participante"
           />
-          <button type="submit">Buscar</button>
+          <button type="submit" disabled={searching}>
+            <Icon name="search" />
+            {searching ? 'Buscando…' : 'Buscar'}
+          </button>
         </form>
 
         {searched && results.length === 0 && (
@@ -137,10 +164,17 @@ export default function StaffHome() {
             {results.map((p) => (
               <li key={p.id}>
                 <Link to={`/p/${p.qr_code}`}>
-                  <span className="staff-result-name">{p.full_name}</span>
-                  <span className="staff-result-meta">
-                    {roleLabel(p)}
-                    {p.committee ? ` · ${p.committee}` : ''}
+                  <span
+                    className="role-dot"
+                    style={{ '--role-color': ROLE_COLOR_VARS[p.role] } as React.CSSProperties}
+                  />
+                  <span className="staff-result-text">
+                    <span className="staff-result-name">{p.full_name}</span>
+                    <span className="staff-result-meta">
+                      {roleLabel(p)}
+                      {p.committee ? ` · ${p.committee}` : ''}
+                      {p.allergy && <Icon name="alert" />}
+                    </span>
                   </span>
                 </Link>
               </li>

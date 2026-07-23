@@ -2,7 +2,8 @@
 """
 Creates a staff login (Supabase Auth user + staff_profiles row).
 
-Usage: python3 scripts/create_staff_account.py correo@ejemplo.com staff
+Usage: python3 scripts/create_staff_account.py correo@ejemplo.com viewer
+       python3 scripts/create_staff_account.py correo@ejemplo.com staff
        python3 scripts/create_staff_account.py correo@ejemplo.com admin
 """
 import os
@@ -27,13 +28,13 @@ def load_env():
 
 def main():
     if len(sys.argv) < 2:
-        print("uso: python3 scripts/create_staff_account.py correo@ejemplo.com [staff|admin]")
+        print("uso: python3 scripts/create_staff_account.py correo@ejemplo.com [viewer|staff|admin]")
         sys.exit(1)
 
     email = sys.argv[1]
     role = sys.argv[2] if len(sys.argv) > 2 else "staff"
-    if role not in ("staff", "admin"):
-        print("el rol debe ser 'staff' o 'admin'")
+    if role not in ("viewer", "staff", "admin"):
+        print("el rol debe ser 'viewer', 'staff' o 'admin'")
         sys.exit(1)
 
     load_env()
