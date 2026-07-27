@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { supabase, type MealSession } from '../lib/supabase'
 import { loadMealStats, type MealStats } from '../lib/mealStats'
 import { useMealCheckinsRealtime } from '../lib/useMealCheckinsRealtime'
-
-const MAX_COMMITTEES = 6
+import { ROLE_COLOR_VARS, ROLE_LABELS } from '../lib/roles'
+import DonutChart from '../components/DonutChart'
 
 export default function StaffDashboard() {
   const [latestSession, setLatestSession] = useState<MealSession | null>(null)
@@ -71,31 +71,36 @@ export default function StaffDashboard() {
             </div>
           </div>
 
-          <p className="staff-meals-label">Comités con más pendientes</p>
-          <div className="committee-bars">
-            {stats.byCommittee.slice(0, MAX_COMMITTEES).map((c) => (
-              <div className="committee-bar-row" key={c.committee}>
-                <div className="committee-bar-top">
-                  <span>{c.committee}</span>
-                  <span>
-                    {c.fed}/{c.total}
-                  </span>
-                </div>
-                <div className="committee-bar-track">
-                  <div
-                    className="committee-bar-fill"
-                    style={{ width: c.total ? `${(c.fed / c.total) * 100}%` : '0%' }}
-                  />
-                </div>
-              </div>
-            ))}
+          <div className="dashboard-charts">
+            <div className="dashboard-chart-card">
+              <p className="staff-meals-label">Progreso de comida</p>
+              <DonutChart
+                centerValue={stats.total ? `${Math.round((stats.fed / stats.total) * 100)}%` : '0%'}
+                centerLabel="alimentados"
+                segments={[
+                  { label: 'Alimentados', value: stats.fed, color: 'var(--role-paje)' },
+                  { label: 'Pendientes', value: stats.total - stats.fed, color: 'var(--border-strong)' },
+                ]}
+              />
+            </div>
+
+            <div className="dashboard-chart-card">
+              <p className="staff-meals-label">Participantes por rol</p>
+              <DonutChart
+                centerValue={String(stats.total)}
+                centerLabel="total"
+                segments={stats.byRole.map((r) => ({
+                  label: ROLE_LABELS[r.role],
+                  value: r.count,
+                  color: ROLE_COLOR_VARS[r.role],
+                }))}
+              />
+            </div>
           </div>
 
-          {stats.byCommittee.length > MAX_COMMITTEES && (
-            <Link to="/staff/comidas" className="staff-entry-link committee-see-all">
-              Ver los {stats.byCommittee.length - MAX_COMMITTEES} comités restantes en Comidas →
-            </Link>
-          )}
+          <Link to="/staff/comidas" className="staff-entry-link committee-see-all">
+            Ver detalle por comité en Comidas →
+          </Link>
         </>
       )}
     </div>

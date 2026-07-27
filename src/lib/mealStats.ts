@@ -7,10 +7,16 @@ export type CommitteeStat = {
   pending: Participant[]
 }
 
+export type RoleStat = {
+  role: Participant['role']
+  count: number
+}
+
 export type MealStats = {
   total: number
   fed: number
   byCommittee: CommitteeStat[]
+  byRole: RoleStat[]
 }
 
 export async function loadMealStats(sessionId: string): Promise<MealStats> {
@@ -37,5 +43,13 @@ export async function loadMealStats(sessionId: string): Promise<MealStats> {
     }))
     .sort((a, b) => b.total - b.fed - (a.total - a.fed))
 
-  return { total: all.length, fed: fedIds.size, byCommittee }
+  const roleCounts = new Map<Participant['role'], number>()
+  for (const p of all) {
+    roleCounts.set(p.role, (roleCounts.get(p.role) ?? 0) + 1)
+  }
+  const byRole = Array.from(roleCounts.entries())
+    .map(([role, count]) => ({ role, count }))
+    .sort((a, b) => b.count - a.count)
+
+  return { total: all.length, fed: fedIds.size, byCommittee, byRole }
 }
