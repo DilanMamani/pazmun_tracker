@@ -28,7 +28,11 @@ export default function StaffPanel({ participant }: { participant: Participant }
 
   async function loadSessions() {
     const [{ data: sessionData }, { data: checkinData }] = await Promise.all([
-      supabase.from('meal_sessions').select('id, label, created_at, session_date').order('created_at'),
+      supabase
+        .from('meal_sessions')
+        .select('id, label, created_at, starts_at, ends_at')
+        .order('starts_at', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true }),
       supabase
         .from('meal_checkins')
         .select('meal_session_id, checked_at, checked_by_email')

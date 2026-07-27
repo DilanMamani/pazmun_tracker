@@ -17,7 +17,7 @@ export default function StaffDashboard() {
       setLoading(true)
       const { data: sessions } = await supabase
         .from('meal_sessions')
-        .select('id, label, created_at, session_date')
+        .select('id, label, created_at, starts_at, ends_at')
       const session = pickCurrentSession((sessions as MealSession[]) ?? [])
       setLatestSession(session)
       if (!session) {
@@ -55,7 +55,7 @@ export default function StaffDashboard() {
 
       {!loading && latestSession && stats && (
         <>
-          <p className="staff-home-hint">Comida de hoy: {latestSession.label}</p>
+          <p className="staff-home-hint">Comida actual: {latestSession.label}</p>
 
           <div className="stat-cards">
             <div className="stat-card">

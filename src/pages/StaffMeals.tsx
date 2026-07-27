@@ -23,8 +23,8 @@ export default function StaffMeals() {
   async function loadSessions(selectId?: string) {
     const { data } = await supabase
       .from('meal_sessions')
-      .select('id, label, created_at, session_date')
-      .order('session_date', { ascending: true, nullsFirst: false })
+      .select('id, label, created_at, starts_at, ends_at')
+      .order('starts_at', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
     const list = (data as MealSession[]) ?? []
     setSessions(list)
