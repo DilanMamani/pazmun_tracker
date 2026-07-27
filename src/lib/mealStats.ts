@@ -5,6 +5,7 @@ export type CommitteeStat = {
   total: number
   fed: number
   pending: Participant[]
+  fedMembers: Participant[]
 }
 
 export type RoleStat = {
@@ -40,6 +41,7 @@ export async function loadMealStats(sessionId: string): Promise<MealStats> {
       total: members.length,
       fed: members.filter((m) => fedIds.has(m.id)).length,
       pending: members.filter((m) => !fedIds.has(m.id)),
+      fedMembers: members.filter((m) => fedIds.has(m.id)),
     }))
     .sort((a, b) => b.total - b.fed - (a.total - a.fed))
 

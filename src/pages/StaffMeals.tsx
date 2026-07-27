@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase, type MealSession } from '../lib/supabase'
+import { supabase, type MealSession, type Participant } from '../lib/supabase'
 import { loadMealStats, type CommitteeStat, type MealStats } from '../lib/mealStats'
 import { pickCurrentSession } from '../lib/mealSessions'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
@@ -166,29 +166,40 @@ function CommitteeGroup({ stat }: { stat: CommitteeStat }) {
           {stat.fed}/{stat.total}
         </span>
       </summary>
-      {stat.pending.length === 0 ? (
-        <p className="staff-home-hint">Todos alimentados.</p>
+      {stat.pending.length === 0 && stat.fedMembers.length === 0 ? (
+        <p className="staff-home-hint">Sin participantes.</p>
       ) : (
         <ul className="staff-results">
           {stat.pending.map((p) => (
-            <li key={p.id}>
-              <Link to={`/p/${p.qr_code}`}>
-                <span
-                  className="role-dot"
-                  style={{ '--role-color': ROLE_COLOR_VARS[p.role] } as React.CSSProperties}
-                />
-                <span className="staff-result-text">
-                  <span className="staff-result-name">{p.full_name}</span>
-                  <span className="staff-result-meta">
-                    {roleLabel(p)}
-                    {hasMeaningfulAnswer(p.allergy) && <Icon name="alert" />}
-                  </span>
-                </span>
-              </Link>
-            </li>
+            <MemberRow key={p.id} p={p} fed={false} />
+          ))}
+          {stat.fedMembers.map((p) => (
+            <MemberRow key={p.id} p={p} fed />
           ))}
         </ul>
       )}
     </details>
+  )
+}
+
+function MemberRow({ p, fed }: { p: Participant; fed: boolean }) {
+  return (
+    <li className={fed ? 'fed' : undefined}>
+      <Link to={`/p/${p.qr_code}`}>
+        <Icon name={fed ? 'check-circle' : 'circle'} className="staff-meal-icon" />
+        <span
+          className="role-dot"
+          style={{ '--role-color': ROLE_COLOR_VARS[p.role] } as React.CSSProperties}
+        />
+        <span className="staff-result-text">
+          <span className="staff-result-name">{p.full_name}</span>
+          <span className="staff-result-meta">
+            {roleLabel(p)}
+            {fed && ' · Alimentado'}
+            {hasMeaningfulAnswer(p.allergy) && <Icon name="alert" />}
+          </span>
+        </span>
+      </Link>
+    </li>
   )
 }
