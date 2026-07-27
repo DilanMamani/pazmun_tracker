@@ -5,11 +5,22 @@ import { useMealCheckinsRealtime } from '../lib/useMealCheckinsRealtime'
 import { hasMeaningfulAnswer } from '../lib/textFilters'
 import Icon from './Icon'
 
+type CheckinInfo = { checkedAt: string; email: string | null }
+
+function formatCheckinTime(iso: string) {
+  return new Date(iso).toLocaleString('es-BO', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export default function StaffPanel({ participant }: { participant: Participant }) {
-  const { staffRole } = useSession()
+  const { staffRole, session } = useSession()
   const canEdit = staffRole === 'staff' || staffRole === 'admin'
   const [sessions, setSessions] = useState<MealSession[]>([])
-  const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set())
+  const [checkins, setCheckins] = useState<Map<string, CheckinInfo>>(new Map())
   const [pendingId, setPendingId] = useState<string | null>(null)
 
   const [notes, setNotes] = useState(participant.notes ?? '')
@@ -17,11 +28,21 @@ export default function StaffPanel({ participant }: { participant: Participant }
 
   async function loadSessions() {
     const [{ data: sessionData }, { data: checkinData }] = await Promise.all([
-      supabase.from('meal_sessions').select('id, label, created_at').order('created_at'),
-      supabase.from('meal_checkins').select('meal_session_id').eq('participant_id', participant.id),
+      supabase.from('meal_sessions').select('id, label, created_at, session_date').order('created_at'),
+      supabase
+        .from('meal_checkins')
+        .select('meal_session_id, checked_at, checked_by_email')
+        .eq('participant_id', participant.id),
     ])
     setSessions((sessionData as MealSession[]) ?? [])
-    setCheckedInIds(new Set((checkinData ?? []).map((c) => c.meal_session_id as string)))
+    setCheckins(
+      new Map(
+        (checkinData ?? []).map((c) => [
+          c.meal_session_id as string,
+          { checkedAt: c.checked_at as string, email: c.checked_by_email as string | null },
+        ]),
+      ),
+    )
   }
 
   useEffect(() => {
@@ -31,8 +52,10 @@ export default function StaffPanel({ participant }: { participant: Participant }
 
   useMealCheckinsRealtime(
     (payload) => {
-      const sessionId = payload.new.meal_session_id
-      setCheckedInIds((prev) => new Set(prev).add(sessionId))
+      const { meal_session_id, checked_at, checked_by_email } = payload.new
+      setCheckins((prev) =>
+        new Map(prev).set(meal_session_id, { checkedAt: checked_at, email: checked_by_email }),
+      )
     },
     { column: 'participant_id', value: participant.id },
   )
@@ -43,7 +66,14 @@ export default function StaffPanel({ participant }: { participant: Participant }
       p_qr_code: participant.qr_code,
       p_meal_session_id: sessionId,
     })
-    if (!error) setCheckedInIds((prev) => new Set(prev).add(sessionId))
+    if (!error) {
+      setCheckins((prev) =>
+        new Map(prev).set(sessionId, {
+          checkedAt: new Date().toISOString(),
+          email: session?.user.email ?? null,
+        }),
+      )
+    }
     setPendingId(null)
   }
 
@@ -93,7 +123,8 @@ export default function StaffPanel({ participant }: { participant: Participant }
 
         <ul className="staff-meal-list">
           {sessions.map((s) => {
-            const done = checkedInIds.has(s.id)
+            const info = checkins.get(s.id)
+            const done = !!info
             if (!canEdit) {
               return (
                 <li key={s.id}>
@@ -104,6 +135,11 @@ export default function StaffPanel({ participant }: { participant: Participant }
                     </span>
                     <span className="staff-meal-status">{done ? 'Alimentado' : 'Pendiente'}</span>
                   </span>
+                  {info && (
+                    <p className="staff-meal-by">
+                      Marcado por {info.email ?? 'staff sin registrar'} · {formatCheckinTime(info.checkedAt)}
+                    </p>
+                  )}
                 </li>
               )
             }
@@ -123,6 +159,11 @@ export default function StaffPanel({ participant }: { participant: Participant }
                     {done ? 'Alimentado' : pendingId === s.id ? 'Marcando…' : 'Marcar'}
                   </span>
                 </button>
+                {info && (
+                  <p className="staff-meal-by">
+                    Marcado por {info.email ?? 'staff sin registrar'} · {formatCheckinTime(info.checkedAt)}
+                  </p>
+                )}
               </li>
             )
           })}

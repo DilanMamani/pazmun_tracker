@@ -42,4 +42,5 @@ export type MealCheckin = {
   participant_id: string
   meal_session_id: string
   checked_at: string
+  checked_by_email: string | null
 }
