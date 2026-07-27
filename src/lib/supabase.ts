@@ -34,6 +34,7 @@ export type MealSession = {
   id: string
   label: string
   created_at: string
+  session_date: string | null
 }
 
 export type MealCheckin = {

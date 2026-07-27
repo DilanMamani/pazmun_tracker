@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type MealSession } from '../lib/supabase'
 import { loadMealStats, type CommitteeStat, type MealStats } from '../lib/mealStats'
+import { pickCurrentSession } from '../lib/mealSessions'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
 import { hasMeaningfulAnswer } from '../lib/textFilters'
 import { useSession } from '../lib/useSession'
@@ -22,11 +23,12 @@ export default function StaffMeals() {
   async function loadSessions(selectId?: string) {
     const { data } = await supabase
       .from('meal_sessions')
-      .select('id, label, created_at')
-      .order('created_at', { ascending: false })
+      .select('id, label, created_at, session_date')
+      .order('session_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true })
     const list = (data as MealSession[]) ?? []
     setSessions(list)
-    setSelectedId(selectId ?? list[0]?.id ?? null)
+    setSelectedId(selectId ?? pickCurrentSession(list)?.id ?? null)
   }
 
   useEffect(() => {

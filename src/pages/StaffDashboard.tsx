@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type MealSession } from '../lib/supabase'
 import { loadMealStats, type MealStats } from '../lib/mealStats'
+import { pickCurrentSession } from '../lib/mealSessions'
 import { useMealCheckinsRealtime } from '../lib/useMealCheckinsRealtime'
 import { ROLE_COLOR_VARS, ROLE_LABELS } from '../lib/roles'
 import DonutChart from '../components/DonutChart'
@@ -16,10 +17,8 @@ export default function StaffDashboard() {
       setLoading(true)
       const { data: sessions } = await supabase
         .from('meal_sessions')
-        .select('id, label, created_at')
-        .order('created_at', { ascending: false })
-        .limit(1)
-      const session = (sessions?.[0] as MealSession) ?? null
+        .select('id, label, created_at, session_date')
+      const session = pickCurrentSession((sessions as MealSession[]) ?? [])
       setLatestSession(session)
       if (!session) {
         setLoading(false)
@@ -56,7 +55,7 @@ export default function StaffDashboard() {
 
       {!loading && latestSession && stats && (
         <>
-          <p className="staff-home-hint">Última comida: {latestSession.label}</p>
+          <p className="staff-home-hint">Comida de hoy: {latestSession.label}</p>
 
           <div className="stat-cards">
             <div className="stat-card">
