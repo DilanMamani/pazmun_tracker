@@ -28,7 +28,7 @@ export type Participant = PublicProfile & {
   notes: string | null
 }
 
-export type StaffRole = 'staff' | 'admin'
+export type StaffRole = 'viewer' | 'staff' | 'admin'
 
 export type MealSession = {
   id: string
