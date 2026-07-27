@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase, type Participant } from '../lib/supabase'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
+import { hasMeaningfulAnswer } from '../lib/textFilters'
 import Icon from '../components/Icon'
 import QrScannerOverlay from '../components/QrScannerOverlay'
 
@@ -80,7 +81,7 @@ export default function StaffSearch() {
                   <span className="staff-result-meta">
                     {roleLabel(p)}
                     {p.committee ? ` · ${p.committee}` : ''}
-                    {p.allergy && <Icon name="alert" />}
+                    {hasMeaningfulAnswer(p.allergy) && <Icon name="alert" />}
                   </span>
                 </span>
               </Link>

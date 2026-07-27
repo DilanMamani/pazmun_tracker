@@ -46,6 +46,15 @@
     <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M4.5 20v-9M12 20V4M19.5 20v-6.5"/>
   </symbol>
 
+  <symbol id="eye-icon" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/>
+    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/>
+  </symbol>
+
+  <symbol id="eye-off-icon" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M4.3 4.3 19.7 19.7M9.5 9.7A3 3 0 0 0 12 15a3 3 0 0 0 2.3-1.1M6.2 6.9C4 8.6 2.5 12 2.5 12s3.5 7 9.5 7c1.4 0 2.7-.3 3.8-.8M18 16c2.1-1.7 3.5-4 3.5-4s-1-2-3-3.9"/>
+  </symbol>
+
   <symbol id="qr-icon" viewBox="0 0 24 24">
     <rect x="3.5" y="3.5" width="6" height="6" fill="none" stroke="currentColor" stroke-width="1.6"/>
     <rect x="14.5" y="3.5" width="6" height="6" fill="none" stroke="currentColor" stroke-width="1.6"/>

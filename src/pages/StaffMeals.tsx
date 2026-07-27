@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase, type MealSession } from '../lib/supabase'
 import { loadMealStats, type CommitteeStat, type MealStats } from '../lib/mealStats'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
+import { hasMeaningfulAnswer } from '../lib/textFilters'
 import { useSession } from '../lib/useSession'
 import { useMealCheckinsRealtime } from '../lib/useMealCheckinsRealtime'
 import Icon from '../components/Icon'
@@ -178,7 +179,7 @@ function CommitteeGroup({ stat }: { stat: CommitteeStat }) {
                   <span className="staff-result-name">{p.full_name}</span>
                   <span className="staff-result-meta">
                     {roleLabel(p)}
-                    {p.allergy && <Icon name="alert" />}
+                    {hasMeaningfulAnswer(p.allergy) && <Icon name="alert" />}
                   </span>
                 </span>
               </Link>

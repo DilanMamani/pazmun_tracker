@@ -724,7 +724,38 @@ button {
   padding: 10px 11px;
 }
 
-.staff-login button {
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 42px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  border: none;
+  background: none;
+  color: var(--text-low);
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--blue-accent);
+}
+
+.password-toggle .icon {
+  font-size: 19px;
+}
+
+.staff-login button:not(.password-toggle) {
   width: 100%;
   min-height: 44px;
   margin-top: 4px;
@@ -739,12 +770,12 @@ button {
   cursor: pointer;
 }
 
-.staff-login button:not(:disabled):hover {
+.staff-login button:not(.password-toggle):not(:disabled):hover {
   background: var(--navy-deep);
   border-color: var(--navy-deep);
 }
 
-.staff-login button:disabled {
+.staff-login button:not(.password-toggle):disabled {
   opacity: 0.6;
   cursor: default;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type Participant, type MealSession } from '../lib/supabase'
 import { useSession } from '../lib/useSession'
 import { useMealCheckinsRealtime } from '../lib/useMealCheckinsRealtime'
+import { hasMeaningfulAnswer } from '../lib/textFilters'
 import Icon from './Icon'
 
 export default function StaffPanel({ participant }: { participant: Participant }) {
@@ -61,7 +62,7 @@ export default function StaffPanel({ participant }: { participant: Participant }
     <div className="staff-panel">
       <p className="staff-panel-eyebrow">Solo staff</p>
 
-      {participant.allergy ? (
+      {hasMeaningfulAnswer(participant.allergy) ? (
         <div className="staff-alert">
           <strong>
             <Icon name="alert" />
@@ -76,7 +77,7 @@ export default function StaffPanel({ participant }: { participant: Participant }
         </div>
       )}
 
-      {participant.diet && (
+      {hasMeaningfulAnswer(participant.diet) && (
         <div className="staff-row">
           <dt>Dieta</dt>
           <dd>{participant.diet}</dd>
