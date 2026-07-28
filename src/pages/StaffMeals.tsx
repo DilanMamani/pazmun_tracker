@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase, type MealSession, type Participant } from '../lib/supabase'
 import { loadMealStats, type CommitteeStat, type MealStats } from '../lib/mealStats'
 import { pickCurrentSession } from '../lib/mealSessions'
+import { loadMealReportRows } from '../lib/mealReport'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
 import { hasMeaningfulAnswer } from '../lib/textFilters'
 import { useSession } from '../lib/useSession'
@@ -19,6 +20,7 @@ export default function StaffMeals() {
   const [newSessionLabel, setNewSessionLabel] = useState('')
   const [creatingSession, setCreatingSession] = useState(false)
   const [committeeFilter, setCommitteeFilter] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   async function loadSessions(selectId?: string) {
     const { data } = await supabase
@@ -59,6 +61,21 @@ export default function StaffMeals() {
     },
     selectedId ? { column: 'meal_session_id', value: selectedId } : undefined,
   )
+
+  async function handleExport() {
+    const session = sessions.find((s) => s.id === selectedId)
+    if (!session) return
+    setExporting(true)
+    try {
+      const [rows, { exportMealReport }] = await Promise.all([
+        loadMealReportRows(session.id),
+        import('../lib/exportMealReport'),
+      ])
+      await exportMealReport(session.label, rows)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   async function handleCreateSession(e: FormEvent) {
     e.preventDefault()
@@ -104,9 +121,15 @@ export default function StaffMeals() {
 
       {!loadingStats && stats && (
         <>
-          <p className="staff-alert-count">
-            {stats.fed} de {stats.total} alimentados
-          </p>
+          <div className="meal-report-row">
+            <p className="staff-alert-count">
+              {stats.fed} de {stats.total} alimentados
+            </p>
+            <button type="button" className="meal-report-button" onClick={handleExport} disabled={exporting}>
+              <Icon name="download" />
+              {exporting ? 'Generando…' : 'Descargar reporte'}
+            </button>
+          </div>
 
           <input
             type="search"

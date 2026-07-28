@@ -1134,6 +1134,43 @@ button {
   color: var(--text-hi);
 }
 
+.meal-report-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.meal-report-row .staff-alert-count {
+  margin-bottom: 0;
+}
+
+.meal-report-button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--blue-accent);
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.meal-report-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.meal-report-button:not(:disabled):hover {
+  border-color: var(--blue-accent);
+}
+
 .staff-home h1 {
   margin: 0 0 6px;
   font-size: 21px;
