@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Participant, type PublicProfile } from '../lib/supabase'
 import { ROLE_COLOR_VARS, roleLabel } from '../lib/roles'
 import { assignmentFlag } from '../lib/countries'
 import { useSession } from '../lib/useSession'
 import pazmunLockup from '../assets/pazmun-lockup.png'
 import Avatar from '../components/Avatar'
+import Icon from '../components/Icon'
 import StaffPanel from '../components/StaffPanel'
 
 type State =
@@ -18,6 +19,7 @@ export default function Profile() {
   const { code } = useParams<{ code: string }>()
   const { session, loading: sessionLoading } = useSession()
   const [state, setState] = useState<State>({ status: 'loading' })
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!code || sessionLoading) return
@@ -46,6 +48,13 @@ export default function Profile() {
 
   return (
     <div className="profile-page">
+      {session && (
+        <button type="button" className="profile-back-button" onClick={() => navigate(-1)}>
+          <Icon name="back" />
+          Volver
+        </button>
+      )}
+
       {state.status === 'loading' && (
         <div className="skeleton-card" aria-label="Cargando credencial" role="status">
           <div className="skeleton-header" />

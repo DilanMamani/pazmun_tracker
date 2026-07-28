@@ -113,6 +113,35 @@ button {
   color: var(--text-mid);
 }
 
+.profile-back-button {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-hi);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 8px 14px 8px 10px;
+  box-shadow: 0 8px 20px -10px rgb(20 32 46 / 0.35);
+  cursor: pointer;
+}
+
+.profile-back-button:hover {
+  border-color: var(--blue-accent);
+  color: var(--blue-accent);
+}
+
+.profile-back-button .icon {
+  font-size: 16px;
+}
+
 /* --- skeleton (loading state) --- */
 .skeleton-card {
   width: 100%;
