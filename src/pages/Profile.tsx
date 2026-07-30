@@ -20,6 +20,11 @@ export default function Profile() {
   const { session, loading: sessionLoading } = useSession()
   const [state, setState] = useState<State>({ status: 'loading' })
   const navigate = useNavigate()
+  // No depender de que useSession() resuelva para decidir si mostrar el
+  // botón: justo después de escanear un QR con la cámara, esa carga puede
+  // demorarse (visto en iOS) y el botón tardaba en aparecer o no aparecía.
+  // history.length ya está disponible de forma síncrona al montar.
+  const [canGoBack] = useState(() => window.history.length > 1)
 
   useEffect(() => {
     if (!code || sessionLoading) return
@@ -48,7 +53,7 @@ export default function Profile() {
 
   return (
     <div className="profile-page">
-      {session && (
+      {canGoBack && (
         <button type="button" className="profile-back-button" onClick={() => navigate(-1)}>
           <Icon name="back" />
           Volver
