@@ -1101,13 +1101,40 @@ button {
   display: block;
   width: 100%;
   min-height: 44px;
-  margin: 0 0 16px;
+  margin: 0 0 8px;
   font: 14.5px/1.4 var(--sans);
   color: var(--text-hi);
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 8px 11px;
+}
+
+.current-session-status {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--role-paje);
+}
+
+.current-session-button {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin: 0 0 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-accent);
+  background: var(--surface);
+  border: 1px dashed var(--blue-accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.current-session-button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .committee-group {

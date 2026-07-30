@@ -36,6 +36,7 @@ export type MealSession = {
   created_at: string
   starts_at: string | null
   ends_at: string | null
+  is_current: boolean
 }
 
 export type MealCheckin = {

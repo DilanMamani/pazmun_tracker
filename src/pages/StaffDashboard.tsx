@@ -17,7 +17,7 @@ export default function StaffDashboard() {
       setLoading(true)
       const { data: sessions } = await supabase
         .from('meal_sessions')
-        .select('id, label, created_at, starts_at, ends_at')
+        .select('id, label, created_at, starts_at, ends_at, is_current')
       const session = pickCurrentSession((sessions as MealSession[]) ?? [])
       setLatestSession(session)
       if (!session) {

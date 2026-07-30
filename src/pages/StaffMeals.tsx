@@ -24,11 +24,12 @@ export default function StaffMeals() {
   const [committeeFilter, setCommitteeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [exporting, setExporting] = useState(false)
+  const [settingCurrent, setSettingCurrent] = useState(false)
 
   async function loadSessions(selectId?: string) {
     const { data } = await supabase
       .from('meal_sessions')
-      .select('id, label, created_at, starts_at, ends_at')
+      .select('id, label, created_at, starts_at, ends_at, is_current')
       .order('starts_at', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
     const list = (data as MealSession[]) ?? []
@@ -80,6 +81,16 @@ export default function StaffMeals() {
     }
   }
 
+  async function handleSetCurrent() {
+    if (!selectedId) return
+    setSettingCurrent(true)
+    const { error } = await supabase.rpc('staff_set_current_meal_session', { p_session_id: selectedId })
+    if (!error) {
+      setSessions((prev) => prev.map((s) => ({ ...s, is_current: s.id === selectedId })))
+    }
+    setSettingCurrent(false)
+  }
+
   async function handleCreateSession(e: FormEvent) {
     e.preventDefault()
     const label = newSessionLabel.trim()
@@ -102,17 +113,40 @@ export default function StaffMeals() {
       )}
 
       {sessions.length > 0 && (
-        <select
-          className="staff-session-select"
-          value={selectedId ?? ''}
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          {sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <>
+          <select
+            className="staff-session-select"
+            value={selectedId ?? ''}
+            onChange={(e) => setSelectedId(e.target.value)}
+          >
+            {sessions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+          {(() => {
+            const selected = sessions.find((s) => s.id === selectedId)
+            if (!selected) return null
+            if (selected.is_current) {
+              return <p className="current-session-status">✓ Esta es la comida actual para todo el staff</p>
+            }
+            if (staffRole === 'staff' || staffRole === 'admin') {
+              return (
+                <button
+                  type="button"
+                  className="current-session-button"
+                  onClick={handleSetCurrent}
+                  disabled={settingCurrent}
+                >
+                  {settingCurrent ? 'Actualizando…' : 'Usar esta comida ahora'}
+                </button>
+              )
+            }
+            return null
+          })()}
+        </>
       )}
 
       {loadingStats && (

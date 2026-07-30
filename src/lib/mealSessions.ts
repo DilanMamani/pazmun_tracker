@@ -9,8 +9,14 @@ import type { MealSession } from './supabase'
 // Antes de que arranque la primera comida programada, se muestra esa
 // primera como referencia de "lo que viene". Las sesiones creadas a mano sin
 // horario (starts_at null) solo entran como último recurso.
+// Si el staff marcó una comida como actual a mano (porque el evento va
+// antes/después del horario), esa gana sobre el cálculo automático — y así
+// queda igual en Dashboard y Comidas para todo el staff.
 export function pickCurrentSession(sessions: MealSession[]): MealSession | null {
   if (sessions.length === 0) return null
+  const manual = sessions.find((s) => s.is_current)
+  if (manual) return manual
+
   const now = Date.now()
   const scheduled = sessions.filter((s): s is MealSession & { starts_at: string } => !!s.starts_at)
 
