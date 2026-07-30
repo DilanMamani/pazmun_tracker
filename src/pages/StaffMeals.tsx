@@ -10,6 +10,8 @@ import { useSession } from '../lib/useSession'
 import { useMealCheckinsRealtime } from '../lib/useMealCheckinsRealtime'
 import Icon from '../components/Icon'
 
+type StatusFilter = 'all' | 'pending' | 'fed'
+
 export default function StaffMeals() {
   const { staffRole } = useSession()
   const [sessions, setSessions] = useState<MealSession[]>([])
@@ -20,6 +22,7 @@ export default function StaffMeals() {
   const [newSessionLabel, setNewSessionLabel] = useState('')
   const [creatingSession, setCreatingSession] = useState(false)
   const [committeeFilter, setCommitteeFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [exporting, setExporting] = useState(false)
 
   async function loadSessions(selectId?: string) {
@@ -139,16 +142,46 @@ export default function StaffMeals() {
             placeholder="Filtrar por comité…"
           />
 
+          <div className="status-filter" role="group" aria-label="Filtrar por estado">
+            <button
+              type="button"
+              className={statusFilter === 'all' ? 'active' : undefined}
+              onClick={() => setStatusFilter('all')}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              className={statusFilter === 'pending' ? 'active' : undefined}
+              onClick={() => setStatusFilter('pending')}
+            >
+              Pendientes
+            </button>
+            <button
+              type="button"
+              className={statusFilter === 'fed' ? 'active' : undefined}
+              onClick={() => setStatusFilter('fed')}
+            >
+              Alimentados
+            </button>
+          </div>
+
           {(() => {
             const term = committeeFilter.trim().toLowerCase()
-            const filtered = term
+            let filtered = term
               ? stats.byCommittee.filter((c) => c.committee.toLowerCase().includes(term))
               : stats.byCommittee
 
-            if (filtered.length === 0) {
-              return <p className="staff-home-hint">Ningún comité coincide con "{committeeFilter}".</p>
+            if (statusFilter === 'pending') {
+              filtered = filtered.filter((c) => c.pending.length > 0)
+            } else if (statusFilter === 'fed') {
+              filtered = filtered.filter((c) => c.fedMembers.length > 0)
             }
-            return filtered.map((c) => <CommitteeGroup key={c.committee} stat={c} />)
+
+            if (filtered.length === 0) {
+              return <p className="staff-home-hint">Ningún comité coincide con los filtros.</p>
+            }
+            return filtered.map((c) => <CommitteeGroup key={c.committee} stat={c} statusFilter={statusFilter} />)
           })()}
         </>
       )}
@@ -171,11 +204,14 @@ export default function StaffMeals() {
   )
 }
 
-function CommitteeGroup({ stat }: { stat: CommitteeStat }) {
+function CommitteeGroup({ stat, statusFilter }: { stat: CommitteeStat; statusFilter: StatusFilter }) {
   // Empieza cerrado (con ~30 comités, todos abiertos es un scroll
   // interminable) y a partir de ahí el usuario controla el toggle — así un
   // refresh de tiempo real no se lo cierra en la cara mientras lo revisa.
   const [open, setOpen] = useState(false)
+
+  const showPending = statusFilter !== 'fed'
+  const showFed = statusFilter !== 'pending'
 
   return (
     <details
@@ -193,12 +229,8 @@ function CommitteeGroup({ stat }: { stat: CommitteeStat }) {
         <p className="staff-home-hint">Sin participantes.</p>
       ) : (
         <ul className="staff-results">
-          {stat.pending.map((p) => (
-            <MemberRow key={p.id} p={p} fed={false} />
-          ))}
-          {stat.fedMembers.map((p) => (
-            <MemberRow key={p.id} p={p} fed />
-          ))}
+          {showPending && stat.pending.map((p) => <MemberRow key={p.id} p={p} fed={false} />)}
+          {showFed && stat.fedMembers.map((p) => <MemberRow key={p.id} p={p} fed />)}
         </ul>
       )}
     </details>
